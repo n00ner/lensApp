@@ -1,7 +1,8 @@
-package com.zenith.lensapp
+package com.zenith.lensapp.presentation
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import com.zenith.lensapp.R
 
 class MainActivity : AppCompatActivity() {
 
