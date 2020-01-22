@@ -1,5 +1,7 @@
 package com.zenith.lensapp.presentation
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.opengl.GLSurfaceView
 import android.os.Bundle
@@ -9,17 +11,20 @@ import android.view.Window
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import com.zenith.lensapp.R
 import com.zenith.lensapp.presentation.glview.PreviewGLRenderer
-import com.zenith.lensapp.presentation.glview.TextureRenderer
 import kotlinx.android.synthetic.main.activity_main.*
 
 class CameraActivity : AppCompatActivity() {
 
     private lateinit var viewModel: CameraViewModel
     private lateinit var renderer: PreviewGLRenderer
+    private val LIST_PERMISSIONS = arrayOf(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+    private  val REQUEST_CODE_PERMISSION = 101
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,9 +32,10 @@ class CameraActivity : AppCompatActivity() {
         setFullscreenMode()
         setContentView(R.layout.activity_main)
         viewModel = ViewModelProviders.of(this).get(CameraViewModel::class.java)
-        initShutterAnimation()
+        initShutter()
         initFilterChanger()
         initCameraPreview()
+        allPermissionsGranted()
     }
 
     fun initCameraPreview(){
@@ -38,6 +44,15 @@ class CameraActivity : AppCompatActivity() {
         effectsview.setRenderer(renderer)
         effectsview.renderMode = GLSurfaceView.RENDERMODE_WHEN_DIRTY
         renderer.setImage(BitmapFactory.decodeResource(getResources(), R.drawable.puppy))
+
+        if (allPermissionsGranted()) {
+            effectsview.post { startCamera() }
+        } else {
+            ActivityCompat.requestPermissions(
+                this,
+                LIST_PERMISSIONS, REQUEST_CODE_PERMISSION
+            )
+        }
     }
 
 
@@ -72,7 +87,7 @@ class CameraActivity : AppCompatActivity() {
         })
     }
 
-    private fun initShutterAnimation(){
+    private fun initShutter(){
         viewModel.isShutterLongPressed.observe(this, Observer {
             if(it){
                 startScaleAnimation(shutter_btn, 1.5f, 300L)
@@ -90,6 +105,9 @@ class CameraActivity : AppCompatActivity() {
             viewModel.touchShutter()
             true
         }
+        shutter_btn.setOnClickListener {
+            renderer.takePhoto()
+        }
     }
 
     private fun startScaleAnimation(view: View, scaleRatio: Float, duration: Long){
@@ -97,5 +115,31 @@ class CameraActivity : AppCompatActivity() {
         view.animate().scaleX(scaleRatio)
         view.animate().duration = duration
         view.animate().start()
+    }
+
+    private fun allPermissionsGranted() = LIST_PERMISSIONS.all {
+        ContextCompat.checkSelfPermission(
+            baseContext, it
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int, permissions: Array<String>, grantResults: IntArray
+    ) {
+        if (requestCode == REQUEST_CODE_PERMISSION) {
+            if (allPermissionsGranted()) {
+                effectsview.post { startCamera() }
+            } else {
+                Toast.makeText(
+                    this,
+                    "Permissions not granted by the user.",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+    }
+
+    private fun startCamera() {
+
     }
 }

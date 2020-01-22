@@ -43,6 +43,10 @@ class PreviewGLRenderer(private var glSurfaceView: GLSurfaceView) : GLSurfaceVie
         glSurfaceView.requestRender()
     }
 
+    fun takePhoto(){
+        saveFrame = true
+    }
+
 
     private fun loadTextures() { // Generate textures
         GLES20.glGenTextures(2, textures, 0)
@@ -105,6 +109,7 @@ class PreviewGLRenderer(private var glSurfaceView: GLSurfaceView) : GLSurfaceVie
         }
         renderResult()
         if (saveFrame) {
+            saveFrame = false
             SaveImage(takeScreenshot(gl!!)!!)
         }
     }
@@ -127,6 +132,7 @@ class PreviewGLRenderer(private var glSurfaceView: GLSurfaceView) : GLSurfaceVie
             Log.i("TAG", "Image SAVED==========" + file.absolutePath)
         } catch (e: Exception) {
             e.printStackTrace()
+            Log.d("TAG", e.toString())
         }
     }
 
